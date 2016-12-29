@@ -6,7 +6,7 @@ from operator import add
 import numpy as np
 import time
 import sys
-
+#checking
 start_time = time.time()
 procfile = open('proc_results.dat', 'w+')
 def read_prod_data(file):
