@@ -1,0 +1,485 @@
+\documentclass{report}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{multirow}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage[margin=1.0in]{geometry}
+
+
+\begin{document}
+
+
+\title{Beta Spectrum Code Documentation}
+\author{Department of Physics, Temple University\\ Jonathon Sensenig}
+\maketitle
+\chapter{Theory}
+\section{Introduction}
+\paragraph{}
+The beta spectrum analysis code was written with the goal of calculating the beta spectrum
+resulting from the spontaneous fission of $^{252}$Cf. Since the beta spectrum of this element
+is not well known it is of general interest to measure it experimentally. The design of this
+experiment will be guided by the beta spectrum calculations. The caveat is the beta decay 
+data which is tabulated in nuclear databases such as ENSDF, JEFF, etc. is not completely 
+reliable. This uncertainty must be kept in mind while generating beta decay spectra. 
+\section{$^{252}$Cf}
+\paragraph{}
+The element $^{252}$Cf is one of the heaviest elements on the periodic table. Due to its large
+mass it decays with either an alpha decay or fission, with a 97$\%$ and 3$\%$ probability, respectively.
+
+\begin{figure}[H]
+    \centering
+        \includegraphics[width=100mm]{cf-252-cumfiss-plot.png}
+        \caption{Plot of the cumulative fission yield of $^{252}$Cf versus the atomic number $A$. 
+The cumulative fission yield includes the beta decays of the fission fragments as well as the
+ subsequent beta decay chains.}
+\end{figure}
+
+
+\section{Beta Decay}
+\paragraph{}
+Beta decay comes in two varieties, plus and minus. The plus decay is a result of the decay of 
+a proton to a neutron and the minus decay a neutron decaying to a proton.
+\begin{center}
+Beta Plus:      $p \rightarrow n + e^+ + \nu_e$\\
+Beta Minus: $n \rightarrow p + e^- + \bar\nu_e$
+\end{center}
+in terms of the nuclei the following is the generic decay from parent to daughter nucleus,
+\begin{center}
+Beta Plus: $ ^{Z} X^A \rightarrow ^{Z-1}X^{A+1} + e^+ + \nu_e$ \\
+Beta Minus: $ ^{Z} X^A \rightarrow ^{Z+1}X^{A-1} + e^- + \bar\nu_e$
+\end{center}
+Nuclei beta decay to reach a more stable state, usually a nucleus with lower mass. 
+The bound nucleus is a struggle between the Coulomb repulsion, between the protons and the attraction
+between the nucleons (protons and neutrons), and the much stronger, strong nuclear force. The strong
+ nuclear force also depends on the spin of the nucleons. A nonzero nucleon spin results in a stronger 
+ attraction compared to zero spin. 
+The strong nuclear force favors an even number of proton and neutrons. Since protons and 
+neutrons are not identical particles they can be in the same spin state without violating the Pauli
+exclusion principle. Thus nuclei favor and decay to these "magic numbers" (even Z and A), through beta decay, 
+since they are more strongly bound and thus lower energy. In the end the strong nuclear force "wins" the struggle,
+ binding the nucleons at very short distances, 
+since it is very strong over a short range. It loses most of its effectiveness over distances greater than 2.5 Fermi. 
+
+\subsection{Decay Probability}
+\paragraph{}
+The spectrum of the beta decay with energy endpoint $E_0 = E_{\nu} + E_e$ where $E_0$ is 
+the endpoint energy for the decay and sometimes called the $Q$ value. The probability 
+that a decay will occur for a given electron energy $E_e$ is,
+\begin{equation}
+\frac{dN}{dE_e}(E_e, Z, A) = N_0(E_e) F(E_e, Z, A) C(E_e) (1 + \delta(E_e, Z, A))
+\end{equation}
+Here $N_0$ is the electron momentum, F is the Fermi function, C the shape factor, and
+ $\delta$ is the sum of three corrections (see subsection 1.3.x). The electron's momentum is given by,
+\begin{equation}
+N_0(E_e) = (G_F^2/2\pi^3)\left[p_e E_e (E_0 - E_e)^2\right]
+\end{equation}
+The Fermi coupling constant is $G_F$, $p_e$ is the electron momentum, and $E_{\nu} = (E_0 - E_e)$ is 
+the neutrino momentum. Ultimately the factor of $G_F/2\pi^3$ is absorbed into the normalization constant
+so it does not enter the calculation.
+
+It can be useful (it is what is used in the code) to convert the electron energy to kinetic energy with the simple relation,
+\begin{equation}
+E_e = T_e + m_e
+\end{equation}
+
+\subsection{The Fermi Function}
+\paragraph{} 
+The Fermi function accounts for the Coulomb potential felt by the emitted electron. For the beta minus 
+decay the electron will feel an attraction to the nucleus from the Z protons. 
+
+ The Fermi function can be broken into two parts, $F_0$ and $L_0$. This allows for an analytic form
+ for $F_0$ and approximations to be made for $L_0$. The approximation $L_0 = \frac{1}{2}(1+\gamma)$ is used here. Then the form of the Fermi function $F$ is,
+\begin{equation}
+F(Z,E) = L_0F_0 = L_0 \left[4(2p_eR)^{-2(1-\gamma)}\frac{|\Gamma(\gamma+iy)|^2}{[\Gamma(2\gamma+1)]^2}e^{\pi y}\right]
+\end{equation}
+where $p_e = \sqrt{T_e^2 + 2m_eT_e}$  where $T_e$ is the electron kinetic energy.\\ \\
+$R = r_0 A^{1/3}$ where $r_0 = 0.0031$ (Ref. 5) in natural units (c = $\hbar$ = 1). \\ \\ 
+$\gamma = \sqrt{1 - (\alpha Z)^2}$  where $\alpha$ is the fine structure constant.\\  \\
+$y = \alpha Z E_e / p_e$ where $p_e$ and $E_e$ are defined above.\\ \\ 
+$\Gamma(x)$ is the gamma function.\\
+
+An approximation of the Fermi function can be made which is described in Ref.(3). This approximation is simple
+ and accurate for most of the neutrino momentum range and nuclei masses. However, the 
+anti-neutrino momentum is the inverse of the electron momentum. Thus when calculating the beta spectrum it reaches 
+the accuracy limits of the approximation. This is one reason a more accurate approximation 
+is desirable, especially for larger mass nuclei and very high or low electron momenta.
+\begin{equation}
+F(Z, E) = \frac{E}{p}exp\left[ \alpha(Z) + \beta(Z) \left( \frac{E}{m_e c^2} -1 \right)^{1/2} \right]
+\end{equation} 
+The functions $\alpha(Z)$ and $\beta(Z)$ are fitted to experimental data. The functions split the momentum into 
+two ranges, the first being for electron kinetic energy, 
+$T < 1.2m_e c^2$
+\begin{equation}
+\alpha(Z) = -0.811 + 4.46  \times 10^{-2} Z + 1.08 \times 10^{-4} Z^2 
+\end{equation}
+\begin{center}
+$\beta(Z) = 0.673 - 1.82 \times 10 ^{-2} Z + 6.38 \times 10^{-5} Z^2$
+ \end{center}
+ The second range, $T \geq 1.2m_e c^2$, is covered by the similar functions,
+\begin{equation}
+\alpha(Z) = -8.46 \times 10^{-2} + 2.48  \times 10^{-2} Z + 2.37 \times 10^{-4} Z^2 
+\end{equation}
+\begin{center}
+$\beta(Z) = 1.15 \times 10^{-2} + 3.58 \times 10 ^{-4} Z - 6.17 \times 10^{-5} Z^2$
+ \end{center}
+
+\subsection{Shape Factors}
+The shape factors $C$ have multiple expressions which are assigned according to the parity and spin change, 
+$\pi_i\pi_f$ and $\Delta J$, respectively.
+\begin{table}[H]
+\centering
+\caption{Selection rules for beta decay. The forbiddeness is the amount that a particular decay 
+is suppressed. The suppression of the decay goes from least suppressed at the top of the table to
+ most suppressed at the bottom. Here J and $\pi$ are the nucleus' spin and parity, respectively. (6)}
+\renewcommand{\arraystretch}{1.75}
+  \begin{tabular}{lllll}
+    \toprule 
+      $ \Delta $J  = $|J_f - J_i|$& & $\pi_i \pi_f$ &  & Classification  \\
+       \midrule
+  	0, 1 & &1 &  & Allowed  \\
+   	 0, 1 & &-1 &  & 1$^{st}$ Forbidden \\
+	  $>$ 1 & &(-1)$^{|\Delta J|}$ &  & $|\Delta J|^{th}$ Forbidden \\
+	 $>$ 1 & &(-1)$^{|\Delta J| - 1}$ &  & $(|\Delta J| - 1 )^{th}$ Forbidden Unique  \\
+    	   \bottomrule
+  \end{tabular}
+\end{table}
+The form of the shape factors are given in (2) with a longer discussion of the shape factor effects on 
+the beta and anti-neutrino spectrum in (1). The factors are tabulated according to forbiddeness  and the spin 
+of the emitted electron and anti-neutrino. If the spin of the electron and anti-neutrino are anti-parallel, their spins
+cancel, since they are both spin 1/2, such that S = 0. This spin pairing is given the name Fermi decay. Conversely, if the spins couple 
+such that S = 1, it is called a Gamow-Teller decay. 
+
+Below is a list of the shape factors implemented in the code. The Gamow-Teller factors were chosen 
+since it includes a factor for the 1$^{st}$ forbidden unique decay. Choosing the 0$^-$ over the 
+1$^-$, for the 1$^{st}$ forbidden was somewhat arbitrary. 
+\begin{table}[H]
+\centering
+\caption{The Gamow-Teller shape factors from (2). $\beta = p_e/ E_e$}
+\renewcommand{\arraystretch}{1.75}
+  \begin{tabular}{llll}
+    \toprule 
+      Classification & $\Delta J^{\pi}$ & Shape Factor C($E_e$) &    \\
+       \midrule
+  	Allowed &1$^+$ & 1 &     \\
+	1$^{st}$ F. &0$^-$ & $p_e^2 + E_{\nu}^2 + 2\beta^2E_eE_{\nu}$ &     \\
+	1$^{st}$ F. &1$^-$ & $p_e^2 + E_{\nu}^2 - \frac{4}{3}\beta^2E_eE_{\nu}$ &     \\
+	1$^{st}$ F. Unique &2$^-$ & $p_e^2 + E_{\nu}^2$ &     \\
+    	   \bottomrule
+  \end{tabular}
+\end{table}
+ 
+\subsection{Corrections}
+ The $\delta$ correction Eqn.(1.1) is the sum of three corrections $\delta = \delta_{Rad} + \delta_{FS} + \delta_{WM}$. These three
+corrections are $\delta_{Rad}$ the radiative, $\delta_{FS}$ the finite size, and $\delta_{WM}$
+the weak magnetism corrections. Expressions for the $\delta_{FS}$ and $\delta_{WM}$ corrections can be found in (1) and (2), although the weak magnetism corrections are somewhat complicated. 
+
+The finite size (FS) correction removes the approximation that the nucleus is a point. It is also decay
+dependent and inexact. An approximation is given in (1) for allowed Gamow-Teller decays.
+\begin{equation}
+\delta_{FS} = - \frac{3}{2} \frac{\alpha Z}{\hbar c} \langle r \rangle _{(2)} \left( E_e - \frac{E_{\nu}}{27} + \frac{m_e^2 c^4}{3E_e}\right)
+\end{equation}
+where, assuming uniform distributions of weak and charge densities of radius R, $\langle r \rangle _{(2)} = (36/35) R$. 
+A more complete description of this correction is given in (1).
+
+The radiative correction $\delta_{rad}$ is derived for allowed decays in the first order of $\alpha$ in (7).
+The function is listed as $g(E_e, E_0, m_e)$ or Eqn.(20b), where the notation is consistent with what is used
+above.
+
+\chapter{Code}
+
+\section{Introduction}
+\paragraph{} 
+This beta spectrum code consists of two main scripts, one to extract the values from the ENSDF files and
+ one to create the full beta spectrum.
+The dataset processing script is separated from the spectrum generating code to allow easy adaptation for different data formats from various databases. 
+ Only the scripts designed to extract the data from the files need to be written or modified, while 
+ the script generating the spectrum knows nothing of the change.
+ 
+ The following instructions are based on my experience using ENSDF files. The experience using other databases might be slightly different.
+ \section{Data Flow}
+ \paragraph{}
+ The data flow is relatively simple. Start by downloading the entire beta decay dataset from the 
+ ENSDF website. The dataset will be in a zip file so extract it to a convenient directory. Place the 
+ two python scripts, \textit{read$\_$ensdf.py} and \textit{isotope$\_$spectrum.py}, and the fission yield
+ file \textit{cum$\_$py.txt} in the same directory. 
+ Now you're ready to create your spectrum! Below is a diagram of the required files and processing 
+ scripts along with the files the scripts create.
+ \\ \\ 
+ \tikzstyle{startstop} = [rectangle, rounded corners, minimum width=3.2cm, minimum height=1cm,text centered, draw=black]
+\tikzstyle{io} = [rectangle, rounded corners, minimum width=3.2cm, minimum height=1cm, text centered, draw=black]%, fill=blue!30]
+\tikzstyle{process} = [rectangle, minimum width=4cm, minimum height=2cm, text centered, text width=3cm, draw=black]%, fill=orange!30]
+\tikzstyle{decision} = [diamond, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=green!30]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+
+\begin{tikzpicture}[node distance=2cm]
+
+\node (in1) [io] {cum$\_$py.txt};
+\node (in2) [io, below of=in1] {ENSDF Files};
+\node (pro1) [process, right of=in1, xshift=4cm, yshift=-1cm] {read$\_$ensdf.py \\ Data Extraction Code};
+\node (out1) [io, right of=pro1, xshift=3.3cm, yshift=1cm] {betadata.dat};
+\node (out2) [io, right of=pro1, xshift=3.3cm, yshift=-1cm] {readerr.dat};
+
+\draw [arrow] (in1) |- (pro1);
+\draw [arrow] (in2) |- (pro1);
+\draw [arrow] (pro1) -| (out1);
+\draw [arrow] (pro1) -| (out2);
+\end{tikzpicture}
+\\ \\ \\
+\begin{tikzpicture}[node distance=2cm]
+
+\node (in1) [io,  xshift=1.0cm] {cum$\_$py.txt};
+\node (in2) [io, below of=in1] {betadata.dat };
+\node (pro1) [process, right of=in1, xshift=4.5cm, yshift=-1cm] {isotope$\_$spectrum.py \\ Beta Spectrum Generating Code};
+\node (out1) [io, right of=pro1, xshift=3.5cm, yshift=1cm] {final$\_$spectrum.dat};
+\node (out2) [io, right of=pro1, xshift=3.5cm, yshift=-1cm] {proc$\_$results.dat};
+
+\draw [arrow] (in1) |- (pro1);
+\draw [arrow] (in2) |- (pro1);
+\draw [arrow] (pro1) -| (out1);
+\draw [arrow] (pro1) -| (out2);
+
+\end{tikzpicture}
+
+\section{Requirements}
+Need Python 3.xx although it should be backward compatible with 2.xx without any problems. Also need Scipy and 
+Numpy. Highly recommend matplotlib to plot the results although an alternative can be used.
+
+\section{Scripts}
+\subsection{ENSDF Processing Script (read$\_$ensdf2.py)}
+\paragraph{}
+The ENSDF processing script takes care of extracting the beta decay data from the ENSDF files and 
+writes it to a file. The file is kept separate so that the this script can be modified or replaced without affecting the beta 
+spectrum generating code. This allows various databases and formats to be used as the source
+of the decay data. 
+
+This script currently reads from the cumulative fission yield file (\textit{cum$\_$py.txt}), extracting the
+ parent nuclei, isomer flag, and fission yield. The script then searches the ENSDF files in the current directory, reading the 
+data from the matching files and storing the data in the \textit{betadata.dat} file and any errors in an error file named \textit{readerr.dat}. 
+
+There are a number of assumptions that have to be made when reading the ENSDF files. Below is a list of
+these assumptions. \\ \\
+1. No branching ratio: The branch with an unlisted ratio gets assigned 0. Then all branching ratios for a 
+decay are summed and the difference between this total and 100 is equally distributed to the branches with unlisted ratios. 
+E.g. With 5 unlisted branches 100 - 5$\times$0 = 100 so each branch gets a ratio of 100/5. \\ \\
+2. Uncertain or Questionable Decay: These decays are assigned a forbiddeness of A. \\ \\
+3. Predicted or Expected Decay: These decays are assigned a forbiddeness of A. \\ \\
+4. An L but no B record: Discard the daughter energy and skip the branch.\\ \\\
+5. No normalization: Assume the normalization is 1.0. \\ \\
+6. No daughter energy: Skip the branch. \\ \\
+7. No listed parent energy: Assume ground state, i.e., E = 0. \\ \\
+8. Daughter energy is X+E or E+X: Remove the X, + and treat as an energy. \\ \\
+
+\subsection{Extracted Decay Data File (betadata.dat)}
+
+The format of the \textit{betadata.dat} file is,
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.75}
+  \begin{tabular}{lllll}
+    \toprule 
+     Line & & Column 1 & Column 2  & Column 3  \\
+       \midrule
+  	1. & &Parent Nuclei (string) &  Isomer Tag (0,1)&  \\  	
+	2. & &Parent Energy (float)&   Q Value (float)  &\\  
+	3. & &Daughter Energy (float)& Forbiddeness (X)&  Branch Ratio (float)  \\  	
+	$\vdots$ & &  &  &     \\  
+	N. & & EOF &  &     \\  			
+	\midrule
+	X Values  &&&&\\
+	\midrule
+         A (Allowed), &&&&\\
+	FF (1$^{st}$ forbidden) &&&&\\
+	FFU (1$^{st}$ forbidden unique), &&&&\\
+	SFU (2$^{nd}$ forbidden unique)&&&&\\
+    	   \bottomrule
+  \end{tabular}
+\end{table}
+
+
+%1. $\hspace{10mm}$ Parent Nuclei 	$\hspace{23mm}$	Isomer tag (0 / 1)\\
+%2. $\hspace{10mm}$ Parent energy level 	$\hspace{15mm}$	Q - value\\
+%3. $\hspace{10mm}$ Daughter energy level $\hspace{10mm}$	Forbiddeness 	$\hspace{15mm}$Branch Ratio \\
+ %$\vdots$ \\
+%4. $\hspace{10mm}$ EOF
+
+1. The first line is the parent nuclei, note the ENSDF file is named after the daughter nuclei, e.g., parent 16N with the daughter
+ (and ENSDF file name) being 16O. The Isomer flag is 0 if it is a ground state decay and 1 if
+the decay is from an excited state (isomer).\\ \\
+2. This line gives the parent energy, 0 (ground state) unless it is an isomer. The second column is the Q value, or endpoint 
+energy, of the decay.\\ \\
+3. The first column is the daughter energy level it is decaying to. The second is the Forbiddeness of 
+the decay, with the possible values listed under \textit{X Values}, above. The third column is the 
+branching ratio, or probability of the given decay branch occurring.  \\ \\
+4. Indicates the end of the parent or isomer decay data. 
+
+\subsection{Error File (readerr.dat)}
+
+The script \textit{read$\_$ensdf2.dat} also prints an error file called \textit{readerr.dat}. This lists the 
+daughter nuclei/ENSDF file name and if the file exists. If the file exists it lists the branching ratios and
+the total branching ratio (sum of all the ratios). If this value is greater than 100$\%$ it lists an error. An example
+ of an entry in \textit{readerr.dat} with a few errors is listed below.\\
+------------------------------------------\\
+------------------------------------------ \\
+File:  103NB \\
+No Branching Ratio on line:  37\\
+No Branching Ratio on line:  56\\
+No Branching Ratio on line:  80\\
+No Branching Ratio on line:  115\\
+----------- \\
+Branching Ratios \\
+10.0\\
+0.0\\
+0.0\\
+0.0\\
+0.0\\
+Total Branching Ratio:  10.00\\
+-----------\\
+File:  103NB\\
+Length mismatch!\\
+Length of e:  6 :  [0.0, 163.9, 367.5, 620.0, 1472.3, 2387.7]\\
+Length of intensity:  5 :  [10.0, 0.0, 0.0, 0.0, 0.0]\\
+Length of forbidden:  5 :  ['A', 'A', 'A', 'A', 'A']\\
+Successfully Read File\\
+------------------------------------------\\
+------------------------------------------\\
+There are no branching ratios listed for 4/5 branches listed. The error message is followed by the line
+ in the ENSDF file where the error occurred. These 4 branches are assigned a ratio of 0 as stated in Sec. (2.4.1). 
+ The last error is the length mismatch. It prints the entire list after the length for easier diagnostics.
+  For every energy there should be an intensity and forbiddeness so the
+number of elements in the three lists should match. However, if the last daughter energy is not followed 
+by a line with a branching ratio and forbiddeness, the e list ends up with an extra element. Since 
+a daughter energy with no branching ratio and forbiddness is skipped in anyway, this is not a problem but
+one should be aware of this if modifications are made. 
+
+\subsection{Beta Spectrum Generator (isotope$\_$spectrum.py)}
+\paragraph{}
+This script is where the beta spectrum is generated. It is probably most intuitive to list its operation as a list of steps. \\ \\
+1. The parent nucleus and its fission yield is read from the \textit{cum$\_$py.txt} file.\\ \\
+2. The respective nuclei's decay data is retrieved from the \textit{betadata.dat} file, if it exists.\\ \\
+3. If the data is found in step 2, a beta spectrum is generated for each branch. Each spectrum is
+ normalized, such that the integrating over the spectrum gives 1,  then multiplied with the given branch ratio.\\ \\
+4. The spectra from each branch of a isotope or isomer are summed. The total is normalized and multiplied
+by the fission yield. \\ \\
+5. The spectra from every isotope and isomer is summed and normalized. \\ 
+
+The script writes the final spectrum to \textit{final$\_$spectrum.dat}. This file contains two columns, the first is
+the energy and second the decay probability. 
+
+\subsection{Beta Spectrum Script Calculation Details}
+There are two versions of the beta spectrum code. The \textit{isotope$\_$spectrum.py} uses the 
+approximation for the Fermi function which is given in Eqn.(1.5) and Eqn.(1.6). This is the most 
+straightforward implementation and performs well for most nuclei. However, it approaches its limits 
+for large nuclei such as some of the  $^{252}$Cf fission fragments. A full discussion of the limits
+of the approximation is given in (3). This leaves some room for improvement along with the 
+question of how the implementation of an exact Fermi function would perform.
+
+The script \textit{isotope$\_$spectrum$\_$exfermi.py} is the same except for the exact Fermi function Eqn.(1.3) 
+and the addition of a finite size ($\delta_{FS}$) correction Eqn.(1.7). 
+
+Note both beta spectrum generating codes use only the Gamow-Teller shape factors. The code 
+only uses the 0$^-$ 1$^{st}$ forbidden shape factor. See section 1.3.3 for more details.
+
+\subsection{Fission Yield (cum$\_$py.txt)}
+This file contains the cumulative fission yield for the $^{252}$Cf spontaneous fission. The format is from the 
+human readable format on the ENDF website at, 
+\begin{center}
+ http://www.nndc.bnl.gov/sigma/getFissionYieldsData.jsp?evalid=15509$\&$mf=8$\&$mt=459 
+ \end{center}
+ Not sure where the nucleus names came from. Each line of the file is an isotope with the columns 
+ in the following format,
+ 
+ \begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.75}
+  \begin{tabular}{ll}
+    \toprule 
+     Column & Description\\
+       \midrule
+  	 1. &Line Number\\
+	  2.&Z \\
+	   3.& Parent Nucleus Name\\
+	    4.& A \\
+	    5. & ?? \\
+	     6.& Isomer Tag \\ 
+	      7.& Fission Yield  \\
+	       8.& Uncertainty in Fission Yield \\
+    	   \bottomrule
+  \end{tabular}
+\end{table}
+\section{Beta Spectrum Processing Results (proc$\_$results.dat)}
+\paragraph{} 
+This file contains information regarding the processing of the beta decay data. For each parent 
+nuclei, it contains the number of branches, and their respective energy levels, forbiddeness, and 
+branching ratio. It also gives the normalization integration, for each level and isotope or isomer. The 
+file's content labelling is self explanatory and it should only be necessary to use for diagnostic purposes. 
+
+ 
+\chapter{Hopes, Dreams, and Reality}
+As an order of priority, the following items should be addressed in the order which they are listed.
+\section{Fixes}
+\begin{figure}[H]
+    \centering
+        \includegraphics[width=100mm]{current_spec_plot.png}
+        \caption{My current code overlaid on Gabe's spectrum. The oval indicates the area of disagreement.}
+\end{figure}
+
+The code is currently in a state where it can generate a spectrum which appears to be mostly correct. Gabe 
+has developed code which can also generate beta spectra. Using his spectrum as a check, most of the 
+spectrum matches nicely except in the  10,500 - 12,500 keV range, as seen in Fig.(3.1). I'm not sure 
+which spectrum is correct but below is a list of possible reasons for the discrepancy. \\ \\ 
+1. Handling decays which do not have listed branching ratios. \\ \\
+2. Handling decays which do not have a branching ratio and forbiddeness (no B line in ENSDF file).\\ \\
+3. The daughter energies with +X added. see section 2.4.1 assumption 8. \\ \\
+4. The shape factors used for the forbiddeness could be different.\\ \\
+5. I use natural units, i.e., $\hbar = c =1$. Not sure if this is right so it's worth checking. \\ \\
+I would recommend resolving this discrepancy as the first priority, in that if this is not understood, it's hard to say if the spectrum is correct.
+
+\section{Upgrades}
+This section focuses on developing the exact Fermi function and adding corrections. It is the most 
+physics-y part of the project and therefore the most interesting, although, arguably, there are no boring parts. 
+The following is a list of enhancements that can be made to the code.   \\ \\
+1. The radiative correction should be added. There is a complicated form given in (7), which is 
+only for allowed decays but should make around 1$\%$ difference. \\ \\
+2. The weak magnetism corrections as given in (1) and (2).  \\ \\
+3. Find a more accurate form for the $L_0$ function in the Fermi function. Currently, it is given by
+$L_0 = \frac{1}{2}(1+\gamma)$ but there is a derivation of a more accurate approximation in (5), albeit 
+much more complicated. \\ \\
+4. More accurate assignment of the shape factors, specifically choosing between the 
+Gamow-Teller and Fermi decay forms. This requires a bit of ingenuity in calculating the
+ spin and parity change $\Delta$J and $\pi_f\pi_i$, respectively. Quite often there are multiple $J^{\pi}$
+ values given for each branch, in the ENSDF file so one would need to develop some standard 
+ for choosing a single value for a given branch.
+ 
+
+\section{Code Projects}
+The script currently uses the file \textit{cum$\_$py.txt} as the input file for the fission fragment nuclei and yields. Due 
+to time constraints I copied the fission yield data from the ENDF database in a human readable form. 
+This works fine for now but to make the code more generic a script similar to \textit{read$\_$ensdf2.py} 
+should be created to extract the fission yields from the ENDF formatted file. It could then be written to 
+a file with a format similar to the \textit{cum$\_$py.txt} or some other convenient format. 
+
+As a more futuristic idea, additional scripts could be written to read decay data from other databases 
+such as JEFF.
+
+
+\section{References}
+1. Hayes A.C. et al. Phys. Rev. Lett 112:202501 (2014)\\
+2. A. C. Hayes, Petr Vogel arXiv:1605.02047\\
+3. Schenter G. and Vogel P. Nucl. Sci. Eng. 83:393 (1983)\\ 
+4. Evaluated Nuclear Structure Data File, Jagdish K. Tuli (http://www.nndc.bnl.gov/nndcscr/documents/ensdf/ensdf-manual.pdf)\\
+5. Behrens H. and Buhring W., Electron Radial Wave Functions and Nuclear Beta-decay (Clarendon
+Press, Oxford, 1982) \\
+6. Online source: https://indico.cern.ch/event/353976/contributions/1759109/attachments/701282/962803/ \\ Subatech$\_$2015$\_$mougeot.pdf  \\
+7. A. Sirlin, Phys. Rev. 164, 1767 (1967); A. Sirlin, Phys. Rev. D 84, 014021 (2011). \\
+
+%\begin{thebibliography}{9}
+%\end{thebibliography}
+
+
+\end{document}
